@@ -62,7 +62,7 @@ urlpatterns = patterns('',
     # Admin
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', admin.site.urls),
-    url(r'^tag_suggest/', include('taggit_autosuggest.urls')),
+    #url(r'^tag_suggest/', include('taggit_autosuggest.urls')),
 
     # Project URLs go here
     (r'^api/', include(v1_api.urls)),
@@ -96,3 +96,9 @@ else:
         url(r'^$', done_registered_fp, name="front_page"),
     )
 urlpatterns += staticfiles_urlpatterns()
+
+if settings.DEBUG:
+    # static files (images, css, javascript, etc.)
+    urlpatterns += patterns('',
+        (r'^media/(?P<path>.*)$', 'django.views.static.serve', {
+        'document_root': settings.MEDIA_ROOT}))

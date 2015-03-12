@@ -27,7 +27,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'test',
+        'NAME': '/home/ubuntu/foiamachine/repo/foiamachine/db/foiamachine.sql',
         'PORT': '3306',
         'HOST': '',
     }
@@ -163,11 +163,11 @@ INSTALLED_APPS = (
     # External apps
     'gunicorn',
     'taggit',
-    'taggit_autosuggest',
+    #'taggit_autosuggest',
     'registration',
     'tastypie',
     'storages',
-    's3_folder_storage',
+    #'s3_folder_storage',
     'guardian',
     #'compressor',
     'south',
@@ -252,17 +252,26 @@ LOGGING = {
 ATTACHMENTS_PATH = os.path.join(MEDIA_ROOT, 'attachments')
 DOCUMENTS_PATH = os.path.join(MEDIA_ROOT, 'documents')
 
+
 MAILGUN_API = 'https://api.mailgun.net/v2'
-MAILGUN_KEY = env("MAILGUN_KEY", "")
+MAILGUN_KEY = env("MAILGUN_KEY", "key-ca1cebfdb9c436f8774dcb4ff6a90871")
 MAILGUN_POP = 'pop3.mailgun.org'
-MG_POST_URL = env("MG_POST_URL", "")
-MG_DOMAIN = env("MG_DOMAIN", "")
+MG_DOMAIN = "mg.bettergov.info"
+MG_POST_URL = MAILGUN_API + '/' + MG_DOMAIN + '/messages' 
+
+"""
+MAILGUN_API = 'https://api.mailgun.net/v2' # no greps
+MAILGUN_KEY = "key-ca1cebfdb9c436f8774dcb4ff6a90871" # no env var 
+MAILGUN_POP = 'pop3.mailgun.org' # probably don't need
+MG_DOMAIN = "sandboxd7fe45096f964e3c885780df3e977604.mailgun.org" # no env, TODO double-check this
+MG_POST_URL = MAILGUN_API + '/' + MG_DOMAIN + '/messages' # TODO double-check this
+"""
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mailgun.org'
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "bc6bfae7fbb921ddf99ad08ce8af93ef")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER","mkieferbga")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "mkiefer.bga@gmail.com")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 SERVER_EMAIL = EMAIL_HOST_USER
@@ -333,3 +342,8 @@ if DEBUG:
     DEBUG_TOOLBAR_CONFIG = {
         'INTERCEPT_REDIRECTS': False,
     }
+
+
+# TODO get rid of this hack
+DEFAULT_S3_PATH = 'media'
+USE_S3 = False

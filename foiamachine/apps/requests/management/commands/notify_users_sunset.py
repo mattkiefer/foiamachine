@@ -49,9 +49,9 @@ class Command(BaseCommand):
             }
 
             if settings.MG_ROUTE:
-                post_url = 'https://api.mailgun.net/v2/%s.foiamachine.mailgun.org/messages' % settings.MG_ROUTE
+                post_url = 'https://api.mailgun.net/v2/%s.%s/messages' % (settings.MG_ROUTE, settings.MG_DOMAIN)
             else:
-                post_url = 'https://api.mailgun.net/v2/foiamachine.mailgun.org/messages'
+                post_url = 'https://api.mailgun.net/v2/%s/messages' % settings.MG_DOMAIN
 
             if settings.SEND_NOTIFICATIONS:
                 resp = requests.post(

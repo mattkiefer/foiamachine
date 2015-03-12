@@ -156,15 +156,16 @@ class MailMessage(models.Model):
             data['cc'] = [addr.get_email for addr in self.cc.all()]
 
         if hasattr(settings, 'MG_ROUTE'):
-            post_url = 'https://api.mailgun.net/v2/%s.foiamachine.mailgun.org/messages' % settings.MG_ROUTE
+            post_url = 'https://api.mailgun.net/v2/%s.%s/messages' % (settings.MG_ROUTE, settings.MG_DOMAIN)
         else:
-            post_url = 'https://api.mailgun.net/v2/foiamachine.mailgun.org/messages'
+            post_url = 'https://api.mailgun.net/v2/%s/messages' % settings.MG_DOMAIN
 
         resp = requests.post(
                 settings.MG_POST_URL,
                 files=MultiDict([("attachment", attachment.file) for attachment in self.attachments.all()]),
                 auth=("api", settings.MAILGUN_KEY),
                 data=data)
+        #import pdb; pdb.set_trace()
         content = json.loads(resp.content)
         self.dated = timezone.now()
         logging.info('MESSAGE SEND STATUS:%s' % resp.content)
@@ -478,9 +479,9 @@ class MailBox(models.Model):
     def get_provisioned_email(self):
         if hasattr(settings, 'MG_ROUTE'):
             # Fix this beore commit
-            thisaddress = "%s@%s.foiamachine.mailgun.org" % (self.usr.username.split("@")[0], settings.MG_ROUTE)
+            thisaddress = "%s@%s.%s" % (self.usr.username.split("@")[0], settings.MG_ROUTE, settings.MG_DOMAIN)
         else:
-            thisaddress = "%s@foiamachine.mailgun.org" % self.usr.username.split("@")[0]
+            thisaddress = "%s@%s" % (self.usr.username.split("@")[0], settings.MG_DOMAIN)
         logger.info("THIS address=%s" % thisaddress)
         if self.provisioned_email is None or self.provisioned_email != thisaddress:
             self.provisioned_email = thisaddress

@@ -622,7 +622,6 @@ class Request(models.Model):
                 else:
                     assign(Request.get_permission_name('view'), group, self)
                     logger.info('request %s permissions changed: added to public' % (self.slug))
-            #import pdb;pdb.set_trace()
             if self.contacts is not None and self.contacts.count() > 0 and self.contacts.all()[0].get_related_agencies().count() > 0:
                 self.agency = self.contacts.all()[0].get_related_agencies()[0]
                 self.government = self.agency.government
