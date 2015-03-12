@@ -52,6 +52,7 @@ class Command(BaseCommand):
                 post_url = 'https://api.mailgun.net/v2/%s.%s/messages' % (settings.MG_ROUTE, settings.MG_DOMAIN)
             else:
                 post_url = 'https://api.mailgun.net/v2/%s/messages' % settings.MG_DOMAIN
+            post_url = settings.MG_POST_URL
 
             if settings.SEND_NOTIFICATIONS:
                 resp = requests.post(
