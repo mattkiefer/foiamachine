@@ -13,8 +13,8 @@ from django.conf import settings
 # START CONFIG
 
 sender_username = 'matthewlkiefer'
-infilename = 'contacts.csv'
-req = Request.objects.get(id=668) # request template to clone 1:IL, 650:IN, 657:WI, 668:MO
+infilename = '/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/contacts/contacts.csv'
+req = Request.objects.get(id=1) # request template to clone 1:IL, 650:IN, 657:WI, 668:MO
 error_log = open('error.log','w')
 test = True
 #TODO: figure out tags
@@ -31,12 +31,12 @@ error_csv = csv.writer(error_log)
 icontacts = []
 for irow in incsv:
     orow = {
-            'government': irow[1],
-            'first_name': irow[3],
-            'last_name': irow[4],
-            'title': irow[5],
-            'email': irow[6],
-            'phone': irow[7],
+            'government': irow[0],
+            'first_name': irow[1],
+            'last_name': irow[2],
+            'title': irow[3],
+            'email': irow[4],
+            'phone': irow[5],
            }
 
     # easy way to skip all the empty rows
@@ -54,17 +54,19 @@ me = User.objects.filter(username=sender_username)[0]
 for icontact in icontacts:
     # don't spam ... need to map this to current request in future cases (tags?)
     if list(EmailAddress.objects.filter(content=icontact['email'])) and not test:
-        continue
+        # print 'contact exists:', icontact['email']
+        pass #continue
+
     try:
         language, ntn, govt = get_defaults()
         govt = get_or_create_us_govt(icontact['government'],'city') # TODO fix dumb hardcoded gov type using string inferences
         agency, created = Agency.objects.get_or_create(name=icontact['government'],government=govt)
         contact, created = Contact.objects.get_or_create(first_name=icontact['first_name'], middle_name='', last_name=icontact['last_name'])
-        contact.add_email(icontact['email'])
-        agency.contacts.add(contact)
-        agency.creator_id = me.id
-        contact.save()
-        agency.save()
+        #contact.add_email(icontact['email'])
+        #agency.contacts.add(contact)
+        #agency.creator_id = me.id
+        #contact.save()
+        #agency.save()
     
         # create request for each contact
         request = Request.objects.create(

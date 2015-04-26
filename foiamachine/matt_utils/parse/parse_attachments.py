@@ -3,10 +3,11 @@ from apps.requests.models import *
 from configs import *
 from special_cases import * 
 from validators import *
-from logger import *
+from logging.logger import *
 from transform import *
 from meta import *
 from formats import *
+
 
 """
 test attachments:
@@ -20,6 +21,7 @@ back this code up!!
 """
 
 
+headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date']
 
 def init_parse(test=False):
     """
@@ -28,10 +30,10 @@ def init_parse(test=False):
     pass in list to test
     """
     outfile = open(outfile_file_path,'w')
-    headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date'] # TODO: don't repeat yourself
     outfile.write(','.join(headers) + '\n')
     outcsv = csv.DictWriter(outfile,headers)
     roll_through_atts(outcsv,test)
+    main_logger_writer.close()
 
 
 def roll_through_atts(outcsv,test):
@@ -51,24 +53,33 @@ def roll_through_atts(outcsv,test):
            for row in data:
                outcsv.writerow(row)
 
+
 def roll_through_lines(incsv, attachment):
     """
     come up with header
     ordering and roll through file 
     writing out data
     """
-    
+    incsv = [x for x in incsv]
     data = [] # output
     header = None
+    doc_log = setup_doc_log(attachment)
+    agency_name = None
+    agency = get_attachment_agency(attachment)
+    if agency:
+        agency_name = agency.name.encode()
 
+    #
+    # includes logic to pass if this data was already processed,
+    # logging at the file level in the main log,
+    # and logging at the row level for this attachment's data
+    #
+    
     for line in iter(incsv):
+        valid = False
         if header:
             row_data = check_data(header,line,attachment)
             if row_data: # skip invalid lines
-                agency_name = None
-                agency = get_attachment_agency(attachment)
-                if agency:
-                    agency_name = agency.name.encode()
                 row_data = do_all_transformations(row_data, header, attachment)
                 row_data['attachment_id'] = attachment.id
                 row_data['agency'] = get_attachment_agency(attachment)
@@ -76,14 +87,21 @@ def roll_through_lines(incsv, attachment):
                 validated_row_data = validate_line(row_data)
                 if validated_row_data:
                     data.append(validated_row_data)
-                else:
-                    log_invalid_line(row_data, attachment)
+                    valid = True
         else:
             header = check_header(line, attachment) # iterate til you find it
-    pprint.pprint(data)
+            if header:
+                valid = True
+        if not valid:
+            # log stuff that's not a header or data
+            write_to_doc_log(doc_log,line)
+
+    doc_log.close()
+    # log how this doc processed overall
+    write_to_main_log(attachment, incsv, agency_name, data, header)
+
     return data
             
-
 
 def check_header(line, attachment):
     """
@@ -158,9 +176,9 @@ def check_data(headers,line,attachment):
 
     return row_data
 
+
 def validate_data(row):
     return True 
-
 
 
 def get_attachment_agency(attachment):
