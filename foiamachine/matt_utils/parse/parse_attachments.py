@@ -16,7 +16,6 @@ test attachments:
 
 TODOS:
 log invalid lines (except maybe blanks ...)
-back this code up!!
 
 """
 
@@ -37,21 +36,27 @@ def init_parse(test=False):
 
 
 def roll_through_atts(outcsv,test):
+    """
+    get each attachment
+    then turn into csv,
+    parse lines, write data
+    """
     if test:
-       attachments = [x for x in Attachment.objects.all() if x.id in test] # quality csv
+        attachments = [x for x in Attachment.objects.all() if x.id in test] # quality csv
     else:
-       attachments = Attachment.objects.all()
-    # need logic to handle multiple attachments/request
+        attachments = Attachment.objects.all()
+    # TODO: need logic to handle multiple attachments/request
     for attachment in attachments:
-       att_csv = csvify(attachment)
-       if att_csv:
-           print '#########'
-           print 'attachment.id:', attachment.id
-           print 'attachment.file.name:',attachment.file.name.encode()
-           print '#########'
-           data = roll_through_lines(att_csv, attachment)
-           for row in data:
-               outcsv.writerow(row)
+        att_csv = csvify(attachment)
+        if att_csv:
+            print '#########'
+            print 'attachment.id:', attachment.id
+            print 'attachment.file.name:',attachment.file.name.encode()
+            print '#########'
+            # logging happens here
+            data = roll_through_lines(att_csv, attachment)
+            for row in data:
+                outcsv.writerow(row)
 
 
 def roll_through_lines(incsv, attachment):
@@ -77,7 +82,8 @@ def roll_through_lines(incsv, attachment):
     
     for line in iter(incsv):
         valid = False
-        if header:
+        if header and line:
+            # validation
             row_data = check_data(header,line,attachment)
             if row_data: # skip invalid lines
                 row_data = do_all_transformations(row_data, header, attachment)
@@ -167,17 +173,24 @@ def check_data(headers,line,attachment):
         if headers[header]['indices']:
             index = headers[header]['indices'][0] # hack
             if index != None:
-                if not line[index] and headers[header]['required']:
-                    # required field is blank
-                    return False
-                row_data[header] = line[index]
-
+                try:
+                    if not line[index] and headers[header]['required']:
+                        # required field is blank
+                        return False
+                    row_data[header] = line[index]
+                except:
+                    import pdb; pdb.set_trace()
     # row_data = validate_row(row_data,header)
 
     return row_data
 
 
 def validate_data(row):
+    """
+    TODO: make sure that
+    fields match expected data
+    types, i.e. money
+    """
     return True 
 
 

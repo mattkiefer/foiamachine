@@ -15,8 +15,10 @@ def csvify(att):
             infile = open(att.file.path,'r')
             return csv.reader(infile)
         if last_four in ('.xls','xlsx'):
-            return convert_xls(att)
-
+            try:
+                return convert_xls(att)
+            except:
+                return None # TODO: investigate this
     else:
         return None
      
