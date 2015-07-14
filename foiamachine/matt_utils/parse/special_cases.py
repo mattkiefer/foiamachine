@@ -4,6 +4,8 @@ you try sometimes you just got
 to hard code some shit
 """
 
+# skip these att ids
+skips = [167,507,595,803,855]
 
 
 def set_order_single_name(data_row, attachment):
@@ -42,6 +44,14 @@ def set_order_single_name(data_row, attachment):
     return data_row
 
 
+def skip(attachment):
+    """
+    some attachments just
+    don't play well and need to be skipped
+    to keep it all going
+    """
+    if attachment.id in skips:
+        return True
 
 def check_if_special(att_id,field_headers,cases):
     """
@@ -106,5 +116,41 @@ cases = [
           'salary': 6,
           'hourly': None,
           'start_date': 4,
+         },
+         {
+          'attachment_id': 803,
+          'first_data_line_number': None, # don't need this with good validation
+          'last_name': 0,
+          'first_name': None,
+          'middle_initial': None,
+          'title': 3,
+          'department': 5,
+          'salary': 6,
+          'hourly': None,
+          'start_date': 1,
+         },
+         {
+          'attachment_id': 38,
+          'first_data_line_number': None, # don't need this with good validation
+          'last_name': 0,
+          'first_name': None,
+          'middle_initial': None,
+          'title': 1,
+          'department': 2,
+          'salary': 6,
+          'hourly': None,
+          'start_date': 1,
+         },
+         {
+          'attachment_id': 167,
+          'first_data_line_number': None, # don't need this with good validation
+          'last_name': 0,
+          'first_name': None,
+          'middle_initial': None,
+          'title': 2,
+          'department': 3,
+          'salary': 4,
+          'hourly': None,
+          'start_date': 1,
          },
         ]

@@ -19,7 +19,10 @@ def validate_line(line):
     
     if not validate_agency_name(line):
         return False
-    
+
+    if not validate_name(line):
+        return False
+
     return line
     
 
@@ -39,4 +42,14 @@ def validate_agency_name(line):
     """
     if not line['agency']:
         return False
-    return True
+    return line
+
+def validate_name(line):
+    """
+    every record
+    should have first, last name fields by
+    validation time
+    """
+    if not line['first_name'] or not line['last_name']:
+        return False
+    return line

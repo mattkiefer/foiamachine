@@ -10,6 +10,8 @@ import probablepeople
 
 test_pp = True
 
+# TODO: Handle salary and hourly
+
 def do_all_transformations(data_row, header, attachment):
     """
     a little wrapper

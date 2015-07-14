@@ -10,4 +10,4 @@ outfile_file_path    = outfile_path + outfile_name
 error_log_path       = repo_path + 'data_output_logs/'
 error_log_name       = 'error.log'
 error_log_file_path  = error_log_path + error_log_name + now_str 
-formats              = ['.csv', '.xls', 'xslx'] # last four chars ext
+formats              = ['csv', 'xls', 'xlsx'] # last split on '.'

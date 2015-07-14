@@ -7,7 +7,7 @@ from logging.logger import *
 from transform import *
 from meta import *
 from formats import *
-
+from get_attachments import get_deduped_attachments
 
 """
 test attachments:
@@ -19,7 +19,7 @@ log invalid lines (except maybe blanks ...)
 
 """
 
-
+valid_data_log_path = '/tmp/valid_data_log.tmp'
 headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date']
 
 def init_parse(test=False):
@@ -30,12 +30,14 @@ def init_parse(test=False):
     """
     outfile = open(outfile_file_path,'w')
     outfile.write(','.join(headers) + '\n')
-    outcsv = csv.DictWriter(outfile,headers)
-    roll_through_atts(outcsv,test)
+    outfile.close()
+    roll_through_atts(test)
     main_logger_writer.close()
+    sort_outfile_by_troublemaker()
 
 
-def roll_through_atts(outcsv,test):
+
+def roll_through_atts(test):
     """
     get each attachment
     then turn into csv,
@@ -44,47 +46,58 @@ def roll_through_atts(outcsv,test):
     if test:
         attachments = [x for x in Attachment.objects.all() if x.id in test] # quality csv
     else:
-        attachments = Attachment.objects.all()
+        attachments = get_deduped_attachments()
     # TODO: need logic to handle multiple attachments/request
     for attachment in attachments:
-        att_csv = csvify(attachment)
-        if att_csv:
-            print '#########'
-            print 'attachment.id:', attachment.id
-            print 'attachment.file.name:',attachment.file.name.encode()
-            print '#########'
+        print '#########'
+        print 'attachment.id:', attachment.id
+        print 'attachment.file.name:',attachment.file.name.encode()
+        print '#########'
+       
+        if skip(attachment) and not test:
+            continue
+        att_list = listify(attachment)
+        if att_list:
             # logging happens here
-            data = roll_through_lines(att_csv, attachment)
-            for row in data:
-                outcsv.writerow(row)
+            roll_through_lines(att_list, attachment)
 
 
-def roll_through_lines(incsv, attachment):
+def roll_through_lines(att_list, attachment):
     """
     come up with header
     ordering and roll through file 
     writing out data
     """
-    incsv = [x for x in incsv]
+    if attachment.id == 507:
+        counter = 0
     data = [] # output
     header = None
-    doc_log = setup_doc_log(attachment)
+    # clear the doc log
+    doc_log = setup_doc_log(attachment,'w')
+    doc_log.write('')
+    doc_log.close()
     agency_name = None
     agency = get_attachment_agency(attachment)
     if agency:
         agency_name = agency.name.encode()
-
+    valid_data_log = open(valid_data_log_path,'w')
+    valid_data_log.write(','.join(headers) + '\n')
+    valid_data_log.close()
     #
     # includes logic to pass if this data was already processed,
     # logging at the file level in the main log,
     # and logging at the row level for this attachment's data
     #
     
-    for line in iter(incsv):
+    consecutive_fail = 0
+    for line in att_list:
+        #if attachment.id == 507:
+        #    counter +=1 
+        #    print counter
         valid = False
         if header and line:
             # validation
-            row_data = check_data(header,line,attachment)
+            row_data = check_data(header,line)
             if row_data: # skip invalid lines
                 row_data = do_all_transformations(row_data, header, attachment)
                 row_data['attachment_id'] = attachment.id
@@ -92,21 +105,40 @@ def roll_through_lines(incsv, attachment):
                 row_data['processed_timestamp'] = now_str
                 validated_row_data = validate_line(row_data)
                 if validated_row_data:
-                    data.append(validated_row_data)
+                    consecutive_fail = 0
+                    #data.append(validated_row_data)
                     valid = True
+                    # for logging
+                    valid_data_log = open(valid_data_log_path,'a')
+                    csv_valid_data_log = csv.DictWriter(valid_data_log, headers)
+                    csv_valid_data_log.writerow(validated_row_data)
+                    valid_data_log.close()
+                    # for data output
+                    outfile = open(outfile_file_path,'a')
+                    outcsv = csv.DictWriter(outfile,headers)
+                    outcsv.writerow(validated_row_data)
+                    outfile.close()
         else:
             header = check_header(line, attachment) # iterate til you find it
             if header:
                 valid = True
+                consecutive_fail = 0
         if not valid:
             # log stuff that's not a header or data
+            doc_log = setup_doc_log(attachment,'a')
             write_to_doc_log(doc_log,line)
+            doc_log.close()
+            consecutive_fail += 1
+            if consecutive_fail == 1000:
+                print 'too many consecutive fails ... continuing'
+                if attachment.id == 167: import pdb; pdb.set_trace()
+                break
 
-    doc_log.close()
+
     # log how this doc processed overall
-    write_to_main_log(attachment, incsv, agency_name, data, header)
+    write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
 
-    return data
+    #return data
             
 
 def check_header(line, attachment):
@@ -131,7 +163,8 @@ def check_header(line, attachment):
                         field_headers[header]['indices'].append(index)
             index += 1
 
-
+        import pdb; pdb.set_trace()
+        # TODO: straighten out when 'name' is in first and last name fields
         distinct_indices = [] # to avoid duplication
         # for now, first index is the best
         for field_header in field_headers:
@@ -141,7 +174,7 @@ def check_header(line, attachment):
                 if field_headers[field_header]['index'] in distinct_indices:
                     # indices shouldn't share between fields
                     # or we'll end up with duplication
-                    return False
+                    return None
                 else:
                     # this field is the only one using this index ... add to the list to prevent duplication
                     distinct_indices.append(field_headers[field_header]['index'])
@@ -154,15 +187,17 @@ def check_header(line, attachment):
 
         missed_requirements = [ x for x in field_headers if field_headers[x]['required'] and not field_headers[x]['indices']]
         if missed_requirements:
-            return False
+            print 'missed_requirements:', missed_requirements
+            return None
         return field_headers 
+
 
 
         # need a special rule for non-mutex keywords, i.e. first and last name
         # like if this header index is in multiple headers
             
 
-def check_data(headers,line,attachment): 
+def check_data(headers,line): 
     """
     return a dict of
     headers and field data joined
@@ -179,22 +214,18 @@ def check_data(headers,line,attachment):
                         return False
                     row_data[header] = line[index]
                 except:
-                    import pdb; pdb.set_trace()
+                    pass
     # row_data = validate_row(row_data,header)
 
     return row_data
 
 
-def validate_data(row):
-    """
-    TODO: make sure that
-    fields match expected data
-    types, i.e. money
-    """
-    return True 
-
-
 def get_attachment_agency(attachment):
+    """
+    look up agency
+    to label row as such in
+    final export file
+    """
     for ma in attachment.message_attachments.all():
         if ma.request:
            return ma.request.agency

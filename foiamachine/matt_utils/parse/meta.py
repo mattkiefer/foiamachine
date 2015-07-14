@@ -8,7 +8,7 @@ def get_field_headers():
     field_headers = {
                      'last_name' : { 
                                      'indices' : [], 
-                                     'keywords': ['last', 'name'], # TODO: still need to disambiguate multiple name fields
+                                     'keywords': ['last', 'name','employee'], # TODO: still need to disambiguate multiple name fields
                                      'required': True, # there's going to be at least one 'name' field
                                      'reported': True,
                                      'title_case'   : True,
@@ -22,7 +22,7 @@ def get_field_headers():
                                     },  
                      'salary':      {   
                                      'indices' : [], 
-                                     'keywords': ['salary', 'pay', 'wage', 'amount','annual'],
+                                     'keywords': ['salary', 'pay', 'wage','amount','annual','total'],
                                      'required': True,
                                      'reported': True,
                                      'title_case'   : False,
@@ -36,7 +36,7 @@ def get_field_headers():
                                     },
                      'title' :      {
                                      'indices' : [],
-                                     'keywords': ['title', 'position', 'job'],
+                                     'keywords': ['title', 'position', 'job','classification'],
                                      'required': True,
                                      'reported': True,
                                      'title_case'   : True,
