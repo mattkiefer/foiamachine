@@ -49,9 +49,30 @@
     <body class="{% block body_class %}{% endblock %}">
         <div class="app-wrap">
             {% block app_navigation %}
+            <div class="error-msgs" id="error-msg">
+                <div id="error-msg-container">
+                  <span id="callback-msg"></span>
+                  <a href="#" id="close-msg-btn">Close</a>
+                </div>
+            </div>
+            <div class="mobile-nav">
+                <i class="fa fa-bars"></i>
+                <i class="fa fa-times"></i>
+                <h1 class="logo"><img src="{{ STATIC_URL }}img/logo-foia-machine.png" /></h1>
+                {% if request.session.org_name %}
+                <div class="nfoic-header">
+                    <h3 class="">+ {{ request.session.org_name }}</h3>
+                </div>
+                {% endif %}
+            </div>
             <!-- Begin left column -->
             <div class="left-col">
-                <h1 class="logo"><a href="{% url 'front_page' %}"><img src="{{ STATIC_URL }}img/logo-foia-machine.png" /></a></h1>
+                <div class="logo">
+                    <a href="{% url 'front_page' %}">
+                        <img class="" src="{{ STATIC_URL }}img/logo-foia-machine.png" /> 
+                        {% if request.session.org_name %}<h3 class="nfoic-header">+ {{ request.session.org_name }}</h3>{% endif %}
+                    </a>
+                </div>
                 <nav class="main-nav">
                     <ul>
                         {% url 'request_new' as nr_url %}
@@ -120,21 +141,20 @@
             
             <!-- Begin right column -->
             <div class="right-col">
-                <div class="error-msgs" id="error-msg">
-                  <span id="callback-msg"></span>
-                  <a href="#" id="close-msg-btn">Close</a>
-                </div>
                 {% block content %}
                 {% endblock %}
                 <footer class="app-footer">
-                    <div class="knight">
-                        <a href="http://www.knightfoundation.org/"><img src="{{ STATIC_URL }}img/logo-knight.png" alt="Knight Foundation" /></a>
+                    <div class="nfoic">
+                        <a href="http://www.nfoic.org/"><img src="{{ STATIC_URL }}img/logo-nfoic.png" align="National Freedom of Information Coalition"/></a>
                     </div>
                     <div class="cir">
                         <a href="http://www.cironline.org"><img src="{{ STATIC_URL }}img/CIR_BUG_300px-alpha.png" align="Center for Investigative Reporting" width="100px"/></a>
                     </div>
                     <div class="rji">
                         <a href="http://www.rjionline.org/"><img src="{{ STATIC_URL }}img/rji-60.png" align="Reynolds Journalism Institute" /></a>
+                    </div>
+                    <div class="knight">
+                        <a href="http://www.knightfoundation.org/"><img src="{{ STATIC_URL }}img/logo-knight.png" alt="Knight Foundation" /></a>
                     </div>
                 </footer>
             </div>
@@ -151,6 +171,31 @@
         <script src="{{ STATIC_URL }}js/ext/jquery-ui-1.10.0.custom.min.js"></script>
         <script src="{{ STATIC_URL }}js/underscore-min.js"></script>
         <script type="text/javascript">
+            var resizeCheck = function(){
+                if(window.innerWidth <= 870){
+                    $(".left-col").hide();
+                    $(".fa-bars").on("click", function(){
+                        $(".left-col").show();
+                        $(".fa-bars").hide();
+                        $(".fa-times").show();
+                    });
+                    $(".fa-times").on("click", function(){
+                        $(".left-col").hide();
+                        $(".fa-bars").show();
+                        $(".fa-times").hide();
+                    });
+                    $(".right-col").on("click", function(){
+                        $(".left-col").hide();
+                        $(".fa-bars").show();
+                        $(".fa-times").hide();
+                    });
+                }else{
+                    $(".left-col").show();
+                }
+            };
+            resizeCheck();
+            $(window).on("resize", resizeCheck);
+
             FOIMachine = {
                 templates: {},
                 userData: {
@@ -158,7 +203,7 @@
                     isEditor: {% if user.is_authenticated %}  {% if user.is_superuser or user.is_staff%} true {% else %} false {% endif %} {% else %} false {%endif %}
                 },
                 utils: {
-                    userMsgDiv: $("#error-msg"),
+                    userMsgDiv: $("#error-msg-container"),
                     closeMsgButton: $("#close-msg-btn"),
                     showUserMsg: function(msg){
                         FOIMachine.utils.userMsgDiv.hide();

@@ -11,6 +11,33 @@
 <link rel="stylesheet" href="{{ STATIC_URL }}js/jquery.qtip.custom/jquery.qtip.css" />
 <link rel="stylesheet" href="{{ STATIC_URL }}css/overcast/jquery-ui-1.10.0.custom.min.css"/>
 <link rel="stylesheet" href="{{ STATIC_URL }}css/medium-editor/medium-editor.css" />
+<style>
+    body {
+        background-color: white;
+    }
+    .left-col {
+        display: none;
+    }
+    .right-col {
+        min-width: inherit;
+        overflow-x: hidden;
+        width: 100%;
+        float: none;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 0;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    .slide {
+        height: 780px !important;
+        padding: 5px;
+        overflow-y: auto !important;
+    }
+    #agency-view-wrapper #agency-view {
+        min-width: inherit !important;
+    }
+</style>
 {% endblock %}
 
 {% block body_class %}page-new-request{% endblock %}
@@ -22,8 +49,6 @@
 <section class="create-new-request">
     <header>
         <div class='topline-nav'>
-            <span>Request Generator > </span>New Request
-            <a id="request-generator-btn-guided" href="/requests/free-form/"><i class="fa fa-pencil-square-o"></i>Switch to custom editor</a>
         </div>
         <div class="progress-meter">
             <div class="track">
@@ -50,12 +75,21 @@
     </div>
         
     <div class="step-1 slide standard-form">
-        <h1 class="headline">About this request</h1>
-        <p class="supporting-text">Use this step-by-step form to generate a FOI request. At the end of the process you'll have a chance to edit the boilerplate text before you send.</p>
-        <p class="supporting-text">Tell us about this request and decide if it should be public or private. After you send or save this request you can choose to share it with specific people. The subject field is the name of this request and will appear as the "Subject" field of the email sent to a FOI officer.</p>
-        <div class="field-wrap">
-            <label for="id_title_field">Subject</label>
-            <input type="text" name="pub-private-title" id="id_pub-private-title">
+        <h1 class="headline" style="margin-bottom: 0;">Public Records Request Generator</h1>
+        <h3 style="margin-top: 0;">By FOIA Machine and <span id="member-name"></span></h3>
+        <p class="supporting-text">Use this step-by-step form to generate a FOI request.</p>
+        <p class="supporting-text">To get started, enter some basic contact information that we'll put in your request letter. We do not record or store this information.</p>
+        <div>
+          <label>Name</label> <input type="text" name="name" id="userName">
+        </div>
+        <div>
+          <label>Address</label> <input type="text" name="address" id="userAddress">
+        </div>
+        <div>
+          <label>Email</label> <input type="text" name="email" id="userEmail">
+        </div>
+        <div>
+          <label>Phone</label> <input type="text" name="phone" id="userPhone">
         </div>
     </div>
 
@@ -122,11 +156,10 @@
     <div class="step-5 slide standard-form">
         <h1 class="headline">Review this request and make final edits</h1>
         <p class="supporting-text">
-            Double click on text for editing options.<br/>
-            Some prior steps may be disabled to prevent from accidentally overwriting your final edits.
+            Double click on text for editing options.
         </p>
         <div class="recipients-container">
-            <span class="intention">This request is intended for</span> 
+            <span class="intention">Mail or email this request to:</span> 
             <div class="intended-parties"></div>
         </div>
         <div contenteditable="true" id="request-edit-area" class="free-edit editable body-step" style="height: 400px;">
@@ -139,21 +172,6 @@
     <div class="next-prev">
         <span class="call-to-action next-btn">Next</span>
         <span class="call-to-action prev-btn">Previous</span>
-        <a href="#" id="send-now-btn" class="call-to-action">Send Now</a>
-    </div>
-    <div>
-        <div class="attachment-controls">
-            <form class="<%= cid %>" id="fileUploadForm">
-                {% csrf_token %}
-                 <button style="position: relative" type="button" id="fileUploadButton" class="btn"><i id="fileUploadStatus"></i>Upload Attachment  
-                 <input style="opacity: 0; position: absolute; top:0; right: 0; left: 0; bottom: 0" type="file" id="fileUploadInput" name="file"></input>  
-                 </button> 
-            </form>
-            <div id="attachments">
-            </div>
-        </div>
-        <span style="float: right;" id="download-request">Download Request</span>
-        <a href="#" id="save-quit-request-btn" class=""><i class="fa fa-floppy-o"></i> Save and Quit</a>
     </div>
 </div>
 </section>
@@ -166,6 +184,7 @@
 
 <script src="{{ STATIC_URL }}js/backbone-min-1.1.2.js"></script>
 <script src="{{ STATIC_URL }}js/backbone-tastypie.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/statutes.json"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/backbone-multi-post-fix.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/agency.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/request.js"></script>
@@ -175,6 +194,91 @@
 <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.iframe-transport.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.fileupload.js"></script>
 <script>
+
+    $.urlParam = function(name){
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if (results==null){
+           return null;
+        }
+        else{
+           return results[1] || 0;
+        }
+    }
+    var orgNames = [
+        'The Alabama Center for Open Government',
+        'The Alaska FOI Coalition',
+        'The First Amendment Coalition of Arizona, Inc.',
+        'The Arkansas Coalition for Open Government',
+        'Californians Aware',
+        'The First Amendment Coalition',
+        'The First Amendment Project',
+        'The Colorado Freedom of Information Council',
+        'The Connecticut Foundation for Open Government',
+        'The New England First Amendment Coalition',
+        'The Delaware Coalition for Open Government',
+        'The D.C. Open Government Coalition',
+        'The Brechner Center for Freedom of Information',
+        'The Florida First Amendment Foundation',
+        'The Marion Brechner First Amendment Project',
+        'The Georgia First Amendment Foundation',
+        'The Media Council Hawaii',
+        'The Open Government Coalition of Hawaii',
+        'The Office of Information Practices',
+        'The Idahoans for Openness in Government',
+        'The Citizen Advocacy Center',
+        'The Illinois First Amendment Center',
+        'The Indiana Coalition for Open Government',
+        'The Iowa Freedom of Information Council',
+        'The Kansas Sunshine Coalition for Open Government',
+        'The Scripps Howard First Amendment Center',
+        'The Louisiana Coalition for Open Government',
+        'The Public Affairs Research Council of Louisiana',
+        'The New Orleans Coalition on Open Governance',
+        'The Maine Freedom of Information Coalition',
+        'The New England First Amendment Coalition',
+        'The Maryland Foundation for Open Government',
+        'The New England First Amendment Coalition',
+        'The Michigan Coalition for Open Government',
+        'The Minnesota Coalition on Government Information',
+        'The Missouri Sunshine Coalition',
+        'The Mississippi Center for Freedom of Information',
+        'The Montana Freedom of Information Hotline, Inc.',
+        'The New England First Amendment Coalition',
+        'The New England First Amendment Coalition',
+        'The New Jersey Foundation for Open Government',
+        'The New Mexico Foundation for Open Government',
+        'Reinvent Albany',
+        'The Tully Center for Free Speech',
+        'The North Carolina Open Government Coalition',
+        'The Ohio Coalition for Open Government',
+        'The Ohio Media Law Center for Ethics and Access',
+        'FOI Oklahoma, Inc.',
+        'The Open Oregon: A Freedom of Information Coalition',
+        'The Pennsylvania Freedom of Information Coalition',
+        'Access/RI',
+        'The New England First Amendment Coalition',
+        'The South Carolina Press Association FOI Committee',
+        'The Tennessee Coalition for Open Government',
+        'The Freedom of Information Foundation of Texas, Inc.',
+        'The Utah Foundation for Open Government',
+        'The New England First Amendment Coalition',
+        'The Virginia Coalition for Open Government',
+        'The Freedom Foundation',
+        'The Washington Coalition for Open Government',
+        'The Wisconsin Freedom of Information Council',
+        'The Lucy Burns Institute',
+        'The West Virginia Open Government Coalition',
+        'The Wyoming Coalition for Open Government'
+    ];
+
+    var orgid = $.urlParam('org');
+
+    if(orgid !== null && parseInt(orgid)>= 0 && parseInt(orgid) < orgNames.length){
+        $("#member-name").html(orgNames[parseInt(orgid)])
+    }else{
+        $("#member-name").html("NFOIC");
+    }
+
     var RequestWizardView = RequestCreationView.extend({
         el: '.create-new-request',
         events: {
@@ -218,6 +322,9 @@
                 me.removeBodyEdit();
             }
         },
+        updateRequest: function(){
+          this.updateAttrs();
+        },
         changeProgressPoint: function(e){
             var target = e.srcElement || e.target;
             this.step = parseInt($(target).attr("data-point"));
@@ -244,6 +351,17 @@
             this.request.changed['prefer_electornic'] = this.$("#id_misc-prefer_electronic_field_0").is(':checked');
             this.request.changed['max_cost'] = this.$(".fee-level :checked").val();
         },
+        updateAttrs: function(){
+            this.request.set('text', FOIMachine.utils.getMediumHtml(".body").trim());
+            this.request.set('fee_waiver', this.$("#id_misc-fee_waiver_field_0").is(':checked'));
+            this.request.set('phone_contact', this.$("#id_misc-prefer_phone_field_0").is(':checked'));
+            this.request.set('prefer_electornic', this.$("#id_misc-prefer_electronic_field_0").is(':checked'));
+            this.request.set('max_cost', this.$(".fee-level :checked").val());
+            this.request.set("userName", this.$("#userName").val());
+            this.request.set("userAddress", this.$("#userAddress").val());
+            this.request.set("userEmail", this.$("#userEmail").val());
+            this.request.set("userPhone", this.$("#userPhone").val());
+        },
         doStep: function(){
             if(this.step !== this.maxStep){
                 $(".next-btn").show();
@@ -252,6 +370,12 @@
             if(this.step === this.maxStep){
                 $(".next-btn").hide();
                 $("#send-now-btn").show();
+
+
+                $(".free-edit").html(this.getRequestText());
+                $(".free-edit").attr("contenteditable", true);
+                $(".free-edit").addClass("textarea");
+                this.paintRecipients();
             }
         },
         nextStep: function(){ 
@@ -264,7 +388,6 @@
             if(this.step+1 <= this.maxStep){
                 this.$(".step-"+this.step++).hide();
                 this.$(".step-"+this.step).show();
-                this.setStepUrl();
                 this.activatePoints();
                 this.updateRequest();
                 this.doStep();
@@ -274,7 +397,6 @@
             if(this.step-1 >= this.minStep){
                 this.$(".step-"+this.step--).hide();
                 this.$(".step-"+this.step).show();
-                this.setStepUrl();
                 this.activatePoints();
                 this.updateRequest();
                 this.doStep();
@@ -304,7 +426,7 @@
               }});
             }
             if((me.request.get("free_edit_body") === null || me.request.get("free_edit_body").trim() === "")){
-                //$(".free-edit").html(me.request.get("generated_text"));
+                $(".free-edit").html(me.request.get("generated_text"));
                 $(".free-edit").attr("contenteditable", true);
                 $(".free-edit").addClass("textarea");
             }else{
@@ -340,63 +462,58 @@
         getDesciptionText: function(){
             return FOIMachine.utils.getMediumHtml(this.describe).trim();
         },
+        getRequestText: function(){
+          var body = '';
+          law_texts = '';
+          totalSlugs = 0;
+          var minDays = 99;
+          this.request.get("contacts").forEach(function(d, index){
+            d.get("statute_slugs").forEach(function(slug, idx){
+              law_texts += totalSlugs > 0 ? ", " + statutes[slug].short_title : statutes[slug].short_title;
+              totalSlugs += 1;
+            });
+          });
+
+          body += '<p>Pursuant to ' + law_texts + ', I hereby request the following records:</p>';
+          body += '<p>' + this.request.get("text") + '</p>';
+
+          var cost_graf = ''
+          if(law_texts.length > 0)
+              cost_graf += 'Under the ' + law_texts + ' the government is allowed to charge only the cost of copying materials.';
+
+          if(this.request.get('fee_waiver')){
+            cost_graf += ' I am requesting that you waive all applicable fees associated with this request as I believe this request is in the public interest and is not for commercial use. Release of this information is in the public interest because it will contribute significantly to public understanding of government operations and activities. If you deny this request for a fee waiver, please advise me in advance of the estimated charges';
+             if(this.request.get('max_cost') == '0'){
+                  cost_graf += ' associated with fulfilling this request.'
+              }else{
+                  cost_graf += ' if they are to exceed $' + this.request.get('max_cost') + ".";
+              }
+          }else{
+              if(this.request.get('max_cost') == '0'){
+                cost_graf += ' Please advise me in advance of the estimated charges associated with fulfilling this request.'
+              }else{
+                  cost_graf += ' Please advise me in advance of the estimated charges if they are to exceed $' + this.request.get('max_cost')  + '.';
+              }
+          }
+          cost_graf += ' Please send me a detailed and itemized explanation of those charges.'
+          body += "<p>" + cost_graf + "</p>";
+          var misc_graf = ''
+          if(this.request.get("prefer_electornic")){
+            misc_graf += 'In the interest of expediency, and to minimize the research and/or duplication burden on your staff, please send records electronically if possible.  If this is not possible, please notify me before sending to the address listed below.'
+          }
+          body += "<p>" + misc_graf + "</p>";
+          body += "<p>Thank you for your time,</p>";
+          body += "<p>" + this.request.get("userName") + "<br/>";
+          body += "" + this.request.get("userEmail") + "<br/>";
+          body += "" + this.request.get("userPhone") + "<br/>";
+          body += "" + this.request.get("userAddress") + "</p>";
+          return body;
+        },
         setRequest: function(){
             var me = this;
             var match = window.location.hash.match(/request=\d*/)
-            if(match != null){
-              FOIMachine.utils.showUserMsg("Loading request...");
-              var id = match[0].split("=")[1];
-              me.request = new Request({"id": id});
-              this.request.fetch({error: function(){
-                  FOIMachine.utils.showUserMsg("Error finding object to edit");
-                }, success: function(){
-                  FOIMachine.utils.showUserMsg("Request loaded!");
-                  me.request.initRelations();
-                  me.setEditableRequest();
-                  me.$(".body").html(me.request.get("text"));
-                  if(me.request.get("fee_waiver")){
-                    $("#id_misc-fee_waiver_field_0").prop('checked', true);
-                  }else{
-                    $("#id_misc-fee_waiver_field_1").prop('checked', true);
-                  }
-                  if(me.request.get("phone_contact")){
-                    $("#id_misc-prefer_phone_field_0").prop('checked', true);
-                  }else{
-                    $("#id_misc-prefer_phone_field_1").prop('checked', true);
-                  }
-                  if(me.request.get("prefer_electornic")){
-                    $("#id_misc-prefer_electronic_field_0").prop('checked', true);
-                  }else{
-                    $("#id_misc-prefer_electronic_field_1").prop('checked', true);
-                  }
-                  if(me.request.get("max_cost") === 0){
-                    $("#id_misc-fee_level_field_0").prop('checked', true);
-                  }else if(me.request.get("max_cost") === 25){
-                    $("#id_misc-fee_level_field_1").prop('checked', true);
-                  }else if(me.request.get("max_cost") === 50){
-                    $("#id_misc-fee_level_field_2").prop('checked', true);
-                  }else if(me.request.get("max_cost") === 100){
-                    $("#id_misc-fee_level_field_3").prop('checked', true);
-                  } 
-                  if(me.request.get("contacts").length > 0)
-                    $(".rnote").hide();
-                  me.renderAttachments();
-                  if(me.request.canSend())
-                    me.sendButton.addClass('active');
-                  me.setGeneratorButton();
-              }});
-            }else{
-              me.request = new Request({});
-              me.request.initRelations();
-            }
-            {% if sent_too_many %}
-              this.sendButton.removeClass("active");
-              FOIMachine.utils.showUserMsg('You have exceeded your limit of {{ limit }} requests this week. If you would like us to adjust your limit, please email <a href="mailto:info@foiamachine.org">info@foiamachine.org</a>');
-            {% endif %}
-            {% if not is_verified %}
-              //this.sendButton.removeClass("active");
-              //FOIMachine.utils.showUserMsg("Your email address has not been confirmed, <a href='{% url 'account_update' %}'>please respond to the confirmation email</a>.");
-            {% endif %} 
+            me.request = new Request({});
+            me.request.initRelations();
         }
     });
     var rcv = new RequestWizardView({
