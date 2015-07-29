@@ -31,6 +31,8 @@ def validate_salary_format(line):
     try:
         line['salary'] = Decimal(salary) # if it doesn't fit, you must acquit
     except:
+        if '$' in line['salary']:
+            return line
         return None
     return line
 

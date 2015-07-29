@@ -23,13 +23,6 @@ response_report_filename = 'full_response_report.csv'
 exclusion_tags = ['no_employees', 'sort_out', 'postal_mail', 'test','inline_data']
 
 
-def get_all_attachments():
-    """
-    returns all attachments
-    """
-    return Attachment.objects.all()
-
-
 def get_all_requests():
     """
     returns all requests  

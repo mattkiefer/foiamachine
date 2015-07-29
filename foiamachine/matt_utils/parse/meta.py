@@ -7,49 +7,49 @@ def get_field_headers():
 
     field_headers = {
                      'last_name' : { 
-                                     'indices' : [], 
+                                     'indices' : set(), 
                                      'keywords': ['last', 'name','employee'], # TODO: still need to disambiguate multiple name fields
                                      'required': True, # there's going to be at least one 'name' field
                                      'reported': True,
                                      'title_case'   : True,
                                     },  
                      'first_name' : { 
-                                     'indices' : [], 
+                                     'indices' : set(), 
                                      'keywords': ['first', 'fname'],
                                      'required': False, # one name field will go to the last name
                                      'reported': True,
                                      'title_case'   : True,
                                     },  
                      'salary':      {   
-                                     'indices' : [], 
-                                     'keywords': ['salary', 'pay', 'wage','amount','annual','total'],
+                                     'indices' : set(), 
+                                     'keywords': ['salar', 'pay', 'wage','amount','annual','total'],
                                      'required': True,
                                      'reported': True,
                                      'title_case'   : False,
                                     },  
                      'hourly':      {   
-                                     'indices' : [], 
+                                     'indices' : set(), 
                                      'keywords': ['hour'],
                                      'required': False,
                                      'reported': False,
                                      'title_case'   : False,
                                     },
                      'title' :      {
-                                     'indices' : [],
+                                     'indices' : set(),
                                      'keywords': ['title', 'position', 'job','classification'],
-                                     'required': True,
+                                     'required': False,
                                      'reported': True,
                                      'title_case'   : True,
                                     },
                      'department' : {
-                                     'indices' : [],
+                                     'indices' : set(),
                                      'keywords': ['department', 'dept' ],
-                                     'required': True,
+                                     'required': False,
                                      'reported': True,
                                      'title_case'   : True,
                                     },
                      'start_date' : {
-                                     'indices' : [],
+                                     'indices' : set(),
                                      'keywords': ['start', 'hire', 'date'],
                                      'required': False,
                                      'reported': True,

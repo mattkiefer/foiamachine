@@ -21,6 +21,9 @@ log invalid lines (except maybe blanks ...)
 
 valid_data_log_path = '/tmp/valid_data_log.tmp'
 headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date']
+fail_limit = 1000 # for giving up on long files missing EOL
+test_fail_limit = 10 
+
 
 def init_parse(test=False):
     """
@@ -59,10 +62,10 @@ def roll_through_atts(test):
         att_list = listify(attachment)
         if att_list:
             # logging happens here
-            roll_through_lines(att_list, attachment)
+            roll_through_lines(att_list, attachment, test)
 
 
-def roll_through_lines(att_list, attachment):
+def roll_through_lines(att_list, attachment, test):
     """
     come up with header
     ordering and roll through file 
@@ -91,6 +94,7 @@ def roll_through_lines(att_list, attachment):
     
     consecutive_fail = 0
     for line in att_list:
+        
         #if attachment.id == 507:
         #    counter +=1 
         #    print counter
@@ -104,6 +108,7 @@ def roll_through_lines(att_list, attachment):
                 row_data['agency'] = get_attachment_agency(attachment)
                 row_data['processed_timestamp'] = now_str
                 validated_row_data = validate_line(row_data)
+                #import pdb; pdb.set_trace()
                 if validated_row_data:
                     consecutive_fail = 0
                     #data.append(validated_row_data)
@@ -119,7 +124,8 @@ def roll_through_lines(att_list, attachment):
                     outcsv.writerow(validated_row_data)
                     outfile.close()
         else:
-            header = check_header(line, attachment) # iterate til you find it
+            # iterate until you find header
+            header = check_header(line, attachment)
             if header:
                 valid = True
                 consecutive_fail = 0
@@ -129,14 +135,19 @@ def roll_through_lines(att_list, attachment):
             write_to_doc_log(doc_log,line)
             doc_log.close()
             consecutive_fail += 1
-            if consecutive_fail == 1000:
+            print 'consecutive fail', consecutive_fail
+            if test:
+                fail_limit = test_fail_limit
+            else: # hack! TODO: fix
+                fail_limit = 1000
+            if consecutive_fail == fail_limit:
                 print 'too many consecutive fails ... continuing'
-                if attachment.id == 167: import pdb; pdb.set_trace()
                 break
 
 
     # log how this doc processed overall
-    write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
+    if not test:
+        write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
 
     #return data
             
@@ -147,9 +158,8 @@ def check_header(line, attachment):
     or False
     """
     field_headers = get_field_headers()
-
     index = 0 # offset for columns
-   
+    
     # is this doc a special case?
     special = check_if_special(attachment.id, field_headers, cases)
     if special:
@@ -160,27 +170,31 @@ def check_header(line, attachment):
             for header in field_headers:
                 for keyword in field_headers[header]['keywords']:
                     if keyword in field.lower():
-                        field_headers[header]['indices'].append(index)
+                        field_headers[header]['indices'].add(index)
             index += 1
-
-        import pdb; pdb.set_trace()
+        
         # TODO: straighten out when 'name' is in first and last name fields
         distinct_indices = [] # to avoid duplication
         # for now, first index is the best
         for field_header in field_headers:
             indices = field_headers[field_header]['indices']
             if indices:
-                field_headers[field_header]['index'] = indices[0] # hack! TODO: fix or verify scalar
-                if field_headers[field_header]['index'] in distinct_indices:
+                field_headers[field_header]['index'] = list(indices)[0] # hack! TODO: fix or verify scalar
+                field_headers = disambiguate_first_and_last(field_headers)
+                this_index = field_headers[field_header]['index']
+                if this_index in distinct_indices:
                     # indices shouldn't share between fields
                     # or we'll end up with duplication
+                    print '** multiple fields claiming the same indices:',  [x for x in field_headers if this_index in field_headers[x]['indices']]
+                    print field_headers
                     return None
                 else:
                     # this field is the only one using this index ... add to the list to prevent duplication
                     distinct_indices.append(field_headers[field_header]['index'])
-
+        #import pdb; pdb.set_trace()
         ambiguous_fields = [x for x in field_headers if len(field_headers[x]['indices']) > 1]
         if ambiguous_fields:
+            #import ipdb; ipdb.set_trace()
             print 'ambiguous:', ambiguous_fields
             # return False
             #TODO: figure this out later
@@ -189,6 +203,7 @@ def check_header(line, attachment):
         if missed_requirements:
             print 'missed_requirements:', missed_requirements
             return None
+        # data_row = disambiguate_first_and_last(data_row)
         return field_headers 
 
 
@@ -206,7 +221,7 @@ def check_data(headers,line):
     row_data = dict((header,'') for header in headers) # fills in blank fields up front
     for header in headers:
         if headers[header]['indices']:
-            index = headers[header]['indices'][0] # hack
+            index = list(headers[header]['indices'])[0] # hack
             if index != None:
                 try:
                     if not line[index] and headers[header]['required']:

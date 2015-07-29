@@ -26,6 +26,38 @@ def do_all_transformations(data_row, header, attachment):
     return data_row
 
 
+def disambiguate_first_and_last(data_row):
+    """
+    indicies for first,
+    last names overlap so sort
+    them out distinctly
+    """
+    # check if first and last exist 
+    if data_row['first_name']['indices'] and data_row['last_name']['indices']:
+        # check if first and last share any indices
+        if len(list(data_row['first_name']['indices']) + list(data_row['last_name']['indices'])) \
+        > len(set(list(data_row['first_name']['indices']) + list(data_row['last_name']['indices']))):
+            # uh ... just gonna really inelegantly assume the overlap belongs to first name 
+            # due to stricter keyword searches on first and 'last name, first name' common ambiguity
+            # TODO: fix this bad hack
+            print 'disambiguating first, last', data_row['first_name']['indices'], data_row['last_name']['indices']
+            overlap = [x for x in data_row['first_name']['indices'] \
+                       if x in data_row['last_name']['indices']]
+            # don't leave last name with nothing
+            if set(overlap) == set(data_row['last_name']['indices']):
+                data_row['last_name']['indices'] = overlap
+                data_row['first_name']['indices'] = set()
+                return data_row 
+            data_row['first_name']['indices'] = overlap
+            data_row['last_name']['indices'] = [x for x in data_row['last_name']['indices'] \
+                                                if x not in overlap]
+            
+            print data_row['first_name']['indices'], data_row['last_name']['indices']
+
+
+    return data_row
+
+
 def split_single_name_field(data_row, attachment):
     """
     split names into two
@@ -33,6 +65,10 @@ def split_single_name_field(data_row, attachment):
     or by ordering
     """
     if data_row['last_name'] and not data_row['first_name']:
+        # TODO: this totally belongs elsewhere in transformations
+        data_row['last_name'] = data_row['last_name'].decode('utf-8')
+        data_row['first_name'] = data_row['first_name'].decode('utf-8')
+
         # just testing out probablepeople
         if test_pp:
             parsed_name = probablepeople.parse(data_row['last_name'])
@@ -132,8 +168,13 @@ def put_hourly_in_salary(data_row):
     data if salary is
     available here
     """
-    # copy hourly to salary if salary 
-    if data_row['hourly'] and not data_row['salary']:
+    # copy hourly to salary if salary
+    # TODO: optimize to return converted salary elsewhere
+    try:
+        converted_salary = Decimal(data_row['salary'])
+    except:
+        converted_salary = None
+    if data_row['hourly'] and not converted_salary:
         data_row['salary'] = data_row['hourly']
     return data_row
 

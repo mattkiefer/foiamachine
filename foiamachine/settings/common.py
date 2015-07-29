@@ -15,7 +15,7 @@ SITE_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-DEBUG = env("DEBUG", True) 
+DEBUG = env("DEBUG", False) 
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -33,7 +33,7 @@ DATABASES = {
     }
 }
 
-USE_TZ = False
+USE_TZ = True
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

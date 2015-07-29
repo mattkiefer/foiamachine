@@ -34,6 +34,7 @@ def listify_file(csv_file_path):
         if len(','.join(row)) > 10:
             data.append(row)
     infile.close()
+    #import ipdb; ipdb.set_trace()
     return data
 
 def convert_xls(att):
