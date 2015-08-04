@@ -11,6 +11,8 @@ skips = [
          #167,507,595,803,855, # good? just take awhile? double-check ...
          608, # need to check ascii encode issue
          855, # isbe core dump
+         246, # dupe of 245
+         863, # dupe of 858
         ]
 
 
@@ -323,16 +325,16 @@ cases = [
 
          {
                  # TODO: head -n 20 to see full headers 
-          'attachment_id':None, #736, #
+          'attachment_id':736, #
           'first_data_line_number': None,
-          'last_name': None, #
+          'last_name': 0, #
           'first_name': None, 
           'middle_initial': None,
-          'title': None, #
+          'title': 4, #
           'department': None,
-          'salary': None, #
+          'salary': 6, #
           'hourly': None,
-          'start_date': None,
+          'start_date': 2,
          },
 
 
@@ -549,16 +551,16 @@ cases = [
 
          {
           # TODO: wtf no names???
-          'attachment_id':None, # 245
+          'attachment_id': 245,
           'first_data_line_number': None,
-          'last_name': None, #
-          'first_name': None, 
+          'last_name': 8, #
+          'first_name': 11, 
           'middle_initial': None,
           'title': None, #
-          'department': None,
-          'salary': None, #
+          'department': 32,
+          'salary': 23, #
           'hourly': None,
-          'start_date': None,
+          'start_date': 18,
          },
 
 
@@ -644,16 +646,16 @@ cases = [
 
          {
           # TODO: wtf field headers dont align
-          'attachment_id': None, # 212, #
+          'attachment_id': 212, 
           'first_data_line_number': None,
           'last_name': 1, #
           'first_name': None, 
           'middle_initial': None,
-          'title': None, 
+          'title': 2, 
           'department': None,
-          'salary': None, #
-          'hourly': None,
-          'start_date': None,
+          'salary': 4, #
+          'hourly': 5,
+          'start_date': 6,
          },
 
 
@@ -974,16 +976,16 @@ cases = [
 
          {
           # TODO: 
-          'attachment_id': None, #287, #
+          'attachment_id': 287, #
           'first_data_line_number': None,
           'last_name': 1, #
           'first_name': None, 
           'middle_initial': None,
           'title': 0, 
           'department': None,
-          'salary': None, #
+          'salary': 3, #
           'hourly': None,
-          'start_date': None,
+          'start_date': 2,
          },
 
 
@@ -1133,23 +1135,6 @@ cases = [
           'hourly': None,
           'start_date': 3,
          },
-
-
-
-         {
-          # TODO: wtf 
-          'attachment_id':None, # 730
-          'first_data_line_number': None,
-          'last_name': None, #
-          'first_name': None, 
-          'middle_initial': None,
-          'title': None, 
-          'department': None,
-          'salary': None, #
-          'hourly': None,
-          'start_date': None,
-         },
-
 
 
          {
@@ -1325,17 +1310,17 @@ cases = [
 
 
          {
-          # TODO: head -n 20 
-          'attachment_id':None, # 351
+          # TODO:  
+          'attachment_id': 351,
           'first_data_line_number': None,
-          'last_name': None, #
+          'last_name': 1, #
           'first_name': None, 
           'middle_initial': None,
-          'title': None, 
-          'department': None,
-          'salary': None, #
+          'title': 2, 
+          'department': 3,
+          'salary': 4, #
           'hourly': None,
-          'start_date': None,
+          'start_date': 6,
          },
 
 
@@ -1355,7 +1340,7 @@ cases = [
 
 
          {
-          # TODO: 
+          # TODO: investigate 'something wrong with headers' 
           'attachment_id':471, #
           'first_data_line_number': None,
           'last_name': 1, #
@@ -1370,7 +1355,7 @@ cases = [
 
 
          {
-          # TODO: 
+          # TODO: investigate 
           'attachment_id': 59, #
           'first_data_line_number': None,
           'last_name': 0, #
@@ -1397,6 +1382,70 @@ cases = [
           'salary': None, #
           'hourly': None,
           'start_date': None,
+         },
+
+
+
+         {
+          # TODO: 
+          'attachment_id': 212, #
+          'first_data_line_number': None,
+          'last_name': 1, #
+          'first_name': None, 
+          'middle_initial': None,
+          'title': 2, 
+          'department': None,
+          'salary': 4, #
+          'hourly': 5,
+          'start_date': 6,
+         },
+
+
+         {
+          # TODO: 
+          'attachment_id':287, #
+          'first_data_line_number': None,
+          'last_name': 1, #
+          'first_name': None, 
+          'middle_initial': None,
+          'title': 0, 
+          'department': None,
+          'salary': 3, #
+          'hourly': None,
+          'start_date': 2,
+         },
+
+
+
+
+
+         {
+          # TODO: 
+          'attachment_id': 225, #
+          'first_data_line_number': None,
+          'last_name': 1, #
+          'first_name': None, 
+          'middle_initial': None,
+          'title': 6, 
+          'department': 7,
+          'salary': 4, #
+          'hourly': 5,
+          'start_date': 2,
+         },
+
+
+         {
+          # TODO: 
+          'attachment_id': 730, #
+          'first_data_line_number': None,
+          'last_name': 0, #
+          'first_name': None, 
+          'middle_initial': None,
+          'title': 2, 
+          'department': None,
+          'salary': 3, #
+          'hourly': 4,
+          'start_date': 5,
          },
 
 

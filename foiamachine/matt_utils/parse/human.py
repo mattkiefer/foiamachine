@@ -5,6 +5,7 @@ import StringIO
 
 from apps.requests.models import Attachment
 #from logging.logger import main_logger_path
+#from parse_attachments import get_attachment_agency
 
 
 def human_header(test=None):
@@ -43,6 +44,7 @@ def convert_attachment(attachment):
     # label column headers by zero-index
     headers = get_headers(outfile_path)
     if headers:
+        return
         write_header_indices(outfile_path, headers)
         # csvlook file | head
         output = StringIO.StringIO()
@@ -52,18 +54,22 @@ def convert_attachment(attachment):
         input = StringIO.StringIO(output.getvalue()) 
         return input
     else:
-        print 'something wrong with headers'
+        print 'something wrong with headers. attachment id', attachment.id
 
 
 def head_data(attachment, input):
     """
     as in head -n x
     """
+    #import ipdb; ipdb.set_trace()
+    # agency = get_attachment_agency(attachment)
+    #agency_name = agency and agency.name or 'none'
     print '##################'
     print 'attachment id:', attachment.id
+    # print 'agency:', agency.name
     print '##################'
     line = 0
-    while line < 10:
+    while line < 50:
         print input.next()
         line += 1
     raw_input('')

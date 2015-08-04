@@ -583,13 +583,68 @@ def attachment_report():
                 # print 'copying', att.file.path, 'to', agency_dir
 
 
+def pdfs_suck():
+    """
+    writes report with
+    list of agencies who just 
+    gave us pdfs
+    """
+    headers = ['agency', 'request_id', 'file_attachments'] 
+    outfile = open('pdfs_suck.csv','w')
+    outcsv = csv.DictWriter(outfile, headers)
+    outfile.write(','.join(headers) + '\n')
+    for ra in pdfs_only():
+        outcsv.writerow(row)
+    outfile.close()
+
+
+def pdfs_only():
+    return [ ra for ra in get_request_attachments() if is_pdf_only(ra)]
+
+
+def is_pdf_only(ra):
+    """
+    returns requests with
+    pdfs, but no spreadsheet
+    to id, log and fix
+    """
+    spreadsheet = False
+    pdf = False
+    atts = ra[1]
+    for att in atts:
+        ext = att.file.name.split('.')[-1]
+        if ext in ('xls', 'xlsx', 'csv'):
+            spreadsheet = True
+        if ext in ('pdf'):
+            pdf = True
+    if atts and pdf and not spreadsheet:
+        request = None
+        for ma in att.message_attachments.all():
+            if ma.request:
+                request = ma.request
+            for rep in ma.replies.all():
+                if rep.request:
+                    request = rep.request
+        if request:
+            row = {
+                    'agency': request.agency.name, 
+                    'request_id': request.id, 
+                    'file_attachments': [x.file.name.split('/')[-1] for x in
+                    atts if x.file.name.split('.')[-1] == 'pdf']
+                  }
+            
+            # not validated!
+            return row
+
+
+
 def clean_name(name):
     return name.replace('/','-')
 
 
 def new_request(agency_name,req_id=1):
     from apps.government.utils import get_defaults, get_or_create_us_govt
-    req = Request.objects.get(id=req_id)
+    req = Request.objects.get(id=req_id)    
     me = User.objects.get(username='matthewlkiefer')
     govt = get_or_create_us_govt(agency_name,'city')
     agency, created = Agency.objects.get_or_create(name=agency_name,government=govt)

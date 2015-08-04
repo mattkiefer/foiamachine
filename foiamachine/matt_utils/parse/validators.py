@@ -31,10 +31,12 @@ def validate_salary_format(line):
     try:
         line['salary'] = Decimal(salary) # if it doesn't fit, you must acquit
     except:
-        if '$' in line['salary']:
-            return line
+        for char in ('$','.','/','hour'):
+            if char in line['salary']:
+                return line
         return None
     return line
+
 
 def validate_agency_name(line):
     """
@@ -45,6 +47,7 @@ def validate_agency_name(line):
     if not line['agency']:
         return False
     return line
+
 
 def validate_name(line):
     """

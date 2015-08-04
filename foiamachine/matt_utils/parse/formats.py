@@ -1,6 +1,10 @@
 from configs import *
 from csvkit.utilities.in2csv import In2CSV
-import csv
+import subprocess, csv
+
+
+tmp_file_name = 'tmp.csv'
+
 
 def listify(att):
     """
@@ -11,6 +15,8 @@ def listify(att):
     ext = att.file.name.split('.')[-1]
     
     if ext in formats:
+        if ext == 'pdf':
+            return tabula_csv(att)
         if ext == 'csv':
             return listify_file(att.file.path)
         if ext in ('xls','xlsx'):
@@ -24,7 +30,8 @@ def listify(att):
     else:
         print 'format fail', att.file.name
         return None
-     
+
+
 def listify_file(csv_file_path):
     infile = open(csv_file_path,'r')
     incsv = csv.reader(infile)
@@ -37,12 +44,24 @@ def listify_file(csv_file_path):
     #import ipdb; ipdb.set_trace()
     return data
 
+
 def convert_xls(att):
     att_path = att.file.path
     args = [att_path]
     # put the xls->csv output in a tmp file
-    tmp_file_name = 'tmp.csv'
     tmp_file = open(tmp_file_name,'w')
     In2CSV(args,output_file=tmp_file).main()
+    tmp_file.close()
+    return listify_file(tmp_file_name)
+
+
+def tabula_csv(att):
+    args = [
+                'tabula',
+                att.file.path,
+                '--pages', 'all',
+               ]  
+    tmp_file = open(tmp_file_name,'w')
+    subprocess.call(args,stdout=tmp_file)
     tmp_file.close()
     return listify_file(tmp_file_name)

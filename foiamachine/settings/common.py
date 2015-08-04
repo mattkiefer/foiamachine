@@ -15,7 +15,7 @@ SITE_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-DEBUG = env("DEBUG", False) 
+DEBUG = env("DEBUG", True) 
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -307,7 +307,7 @@ BLEACH_STRIP_TAGS = True
 BLEACH_STRIP_COMMENTS = True
 # Allow for local (per-user) override
 
-ATTACHMENT_SIZE_LIMIT = 1024 * 1024 * 2 #2M
+ATTACHMENT_SIZE_LIMIT = 9999999999999999 #2M
 
 
 try:

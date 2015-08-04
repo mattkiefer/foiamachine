@@ -188,7 +188,7 @@ def sort_outfile_by_troublemaker():
     outfile_reader = open(main_logger_path,'r')
     outfile_csv_reader = csv.DictReader(outfile_reader, main_logger_headers)
     outfile_list = [x for x in outfile_csv_reader]
-    outfile_slist = sorted(outfile_list, key = lambda x: float(x['pct_processed']))
+    outfile_slist = sorted(outfile_list, key = lambda x: Decimal(x['pct_processed']))
     outfile_reader.close()
 
     outfile_writer = open(main_logger_path,'w')
