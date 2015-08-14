@@ -39,6 +39,9 @@ def get_filtered_requests():
     no_employees = Tag.objects.get(name='no_employees')
     return [r for r in get_all_requests() if no_employees not in r.tags.all()]
 
+def get_all_attachments():
+    return Attachment.objects.all()
+
 def get_attachments_with_without_requests():
     atts_with_request = []
     atts_wo_request = []

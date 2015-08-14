@@ -5,6 +5,7 @@ data processing
 """
 
 import csv
+from decimal import Decimal
 
 
 ### CONFIG START ###
@@ -130,6 +131,7 @@ def data_counts(attachment, csvdoc, agency_name, data, header):
         return row
     except Exception, e:
         print e # pass
+        import ipdb; ipdb.set_trace()
         log_fail(agency_name,attachment,header,data_bool)
 
 def log_fail(agency_name,attachment,header,data_bool):
@@ -175,9 +177,11 @@ def write_to_main_log(attachment, csvdoc, agency_name, valid_data_log_path, head
     data = [x for x in csv_valid_data_log]
     print 'collected data in list'
     data = data_counts(attachment, csvdoc, agency_name, data, header)
-    print 'obtained data_counts'
     if data:
+        print 'obtained data_counts'
         main_logger_csv_writer.writerow(data)
+    else:
+        print 'no data_counts'
 
 def sort_outfile_by_troublemaker():
     """

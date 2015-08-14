@@ -50,7 +50,7 @@ def get_field_headers():
                                     },
                      'start_date' : {
                                      'indices' : set(),
-                                     'keywords': ['start', 'hire', 'date'],
+                                     'keywords': ['start', 'hire', 'date', 'doh', 'd.o.h'],
                                      'required': False,
                                      'reported': True,
                                      'title_case'   : False,

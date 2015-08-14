@@ -22,7 +22,7 @@ log invalid lines (except maybe blanks ...)
 valid_data_log_path = '/tmp/valid_data_log.tmp'
 headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date']
 fail_limit = 1000 # for giving up on long files missing EOL
-test_fail_limit = 10 
+test_fail_limit = 1000 
 
 
 def init_parse(test=False):
@@ -47,7 +47,7 @@ def roll_through_atts(test):
     parse lines, write data
     """
     if test:
-        attachments = [x for x in Attachment.objects.all() if x.id in test] # quality csv
+        attachments = [x for x in Attachment.objects.all() if x.id in test]
     else:
         attachments = get_deduped_attachments()
     # TODO: need logic to handle multiple attachments/request
@@ -110,18 +110,35 @@ def roll_through_lines(att_list, attachment, test):
                 validated_row_data = validate_line(row_data)
                 #import pdb; pdb.set_trace()
                 if validated_row_data:
+                    # utf-8 output
+                    validated_row_data['agency'] = validated_row_data['agency'].name
+                    validated_row_data['attachment_id'] = str(validated_row_data['attachment_id'])
+                    validated_row_data['salary'] = str(validated_row_data['salary'])
+                    try:
+                        utf8_validated_row_data = {}
+                        for x in validated_row_data:
+                            utf8_validated_row_data[x] = validated_row_data[x].decode('utf-8').encode('utf-8')
+                        # validated_row_data = dict((x, validated_row_data[x].encode('utf-8')) for x in validated_row_data)   
+                    except Exception, e:
+                        print e
+                        continue
+                        import ipdb; ipdb.set_trace()
                     consecutive_fail = 0
                     #data.append(validated_row_data)
                     valid = True
                     # for logging
-                    valid_data_log = open(valid_data_log_path,'a')
-                    csv_valid_data_log = csv.DictWriter(valid_data_log, headers)
-                    csv_valid_data_log.writerow(validated_row_data)
-                    valid_data_log.close()
+                    # ... why bother
+                    try:
+                        valid_data_log = open(valid_data_log_path,'a')
+                        csv_valid_data_log = csv.DictWriter(valid_data_log, headers)
+                        csv_valid_data_log.writerow(validated_row_data)
+                        valid_data_log.close()
+                    except:
+                        print 'valid data logging failed ***(&(&^#%@)*%@%'
                     # for data output
                     outfile = open(outfile_file_path,'a')
                     outcsv = csv.DictWriter(outfile,headers)
-                    outcsv.writerow(validated_row_data)
+                    outcsv.writerow(utf8_validated_row_data)
                     outfile.close()
         else:
             # iterate until you find header
@@ -146,8 +163,7 @@ def roll_through_lines(att_list, attachment, test):
 
 
     # log how this doc processed overall
-    if not test:
-        write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
+    write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
 
     #return data
             
@@ -249,6 +265,16 @@ def get_attachment_agency(attachment):
                 return reply.request.agency
 
     return None
+
+
+def parse_pdfs():
+    from matt_utils.responses.response_report import pdfs_only
+    pdfs = []
+    for req_atts in pdfs_only():
+        for att in req_atts[1]:
+            if att.file.name.split('.')[-1] == 'pdf':
+                pdfs.append(att.id)
+    init_parse(test=pdfs) 
 
 
 

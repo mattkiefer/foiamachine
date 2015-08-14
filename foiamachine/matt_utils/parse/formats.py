@@ -56,12 +56,18 @@ def convert_xls(att):
 
 
 def tabula_csv(att):
+    from parse_attachments import get_attachment_agency
     args = [
                 'tabula',
                 att.file.path,
-                '--pages', 'all',
-               ]  
-    tmp_file = open(tmp_file_name,'w')
-    subprocess.call(args,stdout=tmp_file)
-    tmp_file.close()
-    return listify_file(tmp_file_name)
+                '--pages', 'all'
+                #'--spreadsheet',
+               ] 
+    csv_dir = '/home/ubuntu/foiamachine/repo/foiamachine/media/media/attachments/matthewlkiefer/pdfs/'
+    agency_name = get_attachment_agency(att).name
+    # don't overwrite dupes
+    file_name = csv_dir + agency_name + '.csv'
+    outfile = open(file_name,'w')
+    subprocess.call(args,stdout=outfile)
+    outfile.close()
+    return listify_file(file_name)

@@ -66,9 +66,11 @@ def split_single_name_field(data_row, attachment):
     """
     if data_row['last_name'] and not data_row['first_name']:
         # TODO: this totally belongs elsewhere in transformations
-        data_row['last_name'] = data_row['last_name'].decode('utf-8')
-        data_row['first_name'] = data_row['first_name'].decode('utf-8')
-
+        try:
+            data_row['last_name'] = data_row['last_name'].decode('utf-8')
+            data_row['first_name'] = data_row['first_name'].decode('utf-8')
+        except:
+            print 'failed to decode name to utf-8'
         # just testing out probablepeople
         if test_pp:
             parsed_name = probablepeople.parse(data_row['last_name'])
@@ -94,9 +96,9 @@ def split_single_name_field(data_row, attachment):
                 suffix = ''
             data_row['last_name'] = ' '.join([last_name, suffix])
             data_row['first_name'] = ' '.join([first_name, middle_init])
-            test_file = open('test_pp.txt','a')
-            test_file.write(data_row['first_name'] + '    ' + data_row['last_name'] + '\n')
-            test_file.close()
+            #test_file = open('test_pp.txt','a')
+            #test_file.write(data_row['first_name'] + '    ' + data_row['last_name'] + '\n')
+            #test_file.close()
             return data_row
 
 
