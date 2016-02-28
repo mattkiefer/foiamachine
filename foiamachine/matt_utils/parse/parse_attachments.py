@@ -8,6 +8,7 @@ from transform import *
 from meta import *
 from formats import *
 from get_attachments import get_deduped_attachments
+from matt_utils.logging.log_checker import get_processed_attachment_ids
 
 """
 test attachments:
@@ -20,6 +21,8 @@ log invalid lines (except maybe blanks ...)
 """
 
 valid_data_log_path = '/tmp/valid_data_log.tmp'
+processed_agencies_path = '/home/ubuntu/foiamachine/repo/foiamachine/output_data/processed_agencies.txt'
+processed_agencies = { x.rstrip() for x in open(processed_agencies_path)}
 headers = ['attachment_id','processed_timestamp','agency', 'last_name', 'first_name', 'salary', 'title', 'department', 'start_date']
 fail_limit = 1000 # for giving up on long files missing EOL
 test_fail_limit = 1000 
@@ -50,19 +53,23 @@ def roll_through_atts(test):
         attachments = [x for x in Attachment.objects.all() if x.id in test]
     else:
         attachments = get_deduped_attachments()
-    # TODO: need logic to handle multiple attachments/request
+        attachments = [x for x in attachments if x.id not in get_processed_attachment_ids()]
+    # TODO: figure out why attachments isn't returning ids [208, 243, 892, 975]
     for attachment in attachments:
         print '#########'
         print 'attachment.id:', attachment.id
         print 'attachment.file.name:',attachment.file.name.encode()
         print '#########'
        
-        if skip(attachment) and not test:
+        if (skip(attachment) or processed(attachment) or is_request_deleted(attachment)):
+            print '*** skipping ***'
+            import ipdb; ipdb.set_trace()
             continue
         att_list = listify(attachment)
         if att_list:
             # logging happens here
             roll_through_lines(att_list, attachment, test)
+            #raw_input('')
 
 
 def roll_through_lines(att_list, attachment, test):
@@ -71,10 +78,10 @@ def roll_through_lines(att_list, attachment, test):
     ordering and roll through file 
     writing out data
     """
-    if attachment.id == 507:
-        counter = 0
     data = [] # output
     header = None
+    processed = False
+
     # clear the doc log
     doc_log = setup_doc_log(attachment,'w')
     doc_log.write('')
@@ -110,6 +117,7 @@ def roll_through_lines(att_list, attachment, test):
                 validated_row_data = validate_line(row_data)
                 #import pdb; pdb.set_trace()
                 if validated_row_data:
+                    valid = True
                     # utf-8 output
                     validated_row_data['agency'] = validated_row_data['agency'].name
                     validated_row_data['attachment_id'] = str(validated_row_data['attachment_id'])
@@ -125,7 +133,6 @@ def roll_through_lines(att_list, attachment, test):
                         import ipdb; ipdb.set_trace()
                     consecutive_fail = 0
                     #data.append(validated_row_data)
-                    valid = True
                     # for logging
                     # ... why bother
                     try:
@@ -140,10 +147,14 @@ def roll_through_lines(att_list, attachment, test):
                     outcsv = csv.DictWriter(outfile,headers)
                     outcsv.writerow(utf8_validated_row_data)
                     outfile.close()
+                    # we passed validation and wrote data ... put this agency down as processed so we don't rerun
+                    processed = True
         else:
             # iterate until you find header
             header = check_header(line, attachment)
             if header:
+                print 'header .....................'
+                import pprint; pprint.pprint(header)
                 valid = True
                 consecutive_fail = 0
         if not valid:
@@ -165,7 +176,10 @@ def roll_through_lines(att_list, attachment, test):
     # log how this doc processed overall
     write_to_main_log(attachment, att_list, agency_name, valid_data_log_path, headers, header)
 
-    #return data
+    # add this agency to file so we don't rerun it
+    if processed:
+        mark_as_processed(utf8_validated_row_data['agency'])
+
             
 
 def check_header(line, attachment):
@@ -259,12 +273,40 @@ def get_attachment_agency(attachment):
     """
     for ma in attachment.message_attachments.all():
         if ma.request:
-           return ma.request.agency
+            return ma.request.agency
+        for reply in ma.replies.all():
+            if reply.request and reply.request.agency and reply.request.agency.name:
+                return reply.request.agency
+    print 'None'
+    return None
+
+
+def is_request_deleted(attachment):
+    """
+    attachments process
+    only if their requests are
+    not marked deleted
+    """
+    request = get_attachment_request(attachment)
+    if request:
+        return request.status in ('X')
+    else:
+        return True
+
+def get_attachment_request(attachment):
+    """
+    look up request to 
+    check if should be deleted
+    among other things
+    """
+    for ma in attachment.message_attachments.all():
+        if ma.request:
+           return ma.request
         for reply in ma.replies.all():
             if reply.request:
-                return reply.request.agency
-
+                return reply.request
     return None
+
 
 
 def parse_pdfs():
@@ -277,6 +319,20 @@ def parse_pdfs():
     init_parse(test=pdfs) 
 
 
+def processed(attachment):
+    return False #get_attachment_agency(attachment).name in processed_agencies 
+
+
+def mark_as_processed(agency):
+    # check if this agency is already in the processed list
+    if agency not in processed_agencies:
+        # if not, append to in-memory set AND file
+        # 2nd thought: maybe don't add this to set because there could be multiple files in a run
+        # processed_agencies.add(agency)
+        processed_agencies_file_a = open(processed_agencies_path,'a')
+        processed_agencies_file_a.write(agency + '\n')
+        processed_agencies_file_a.close()
+        
 
 if __name__ == '__main__':
     init()

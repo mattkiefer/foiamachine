@@ -12,7 +12,7 @@ def listify(att):
     of csv contents with 
     any conversions
     """
-    ext = att.file.name.split('.')[-1]
+    ext = att.file.name.split('.')[-1].lower()
     
     if ext in formats:
         if ext == 'pdf':
@@ -22,8 +22,9 @@ def listify(att):
         if ext in ('xls','xlsx'):
             try:
                 return convert_xls(att)
-            except:
+            except Exception, e:
                 print 'csvify fail:', att.file.name 
+                print e
                 return None # TODO: investigate this
         else:
             print 'ext fail', att.file.name
@@ -50,24 +51,35 @@ def convert_xls(att):
     args = [att_path]
     # put the xls->csv output in a tmp file
     tmp_file = open(tmp_file_name,'w')
-    In2CSV(args,output_file=tmp_file).main()
+    # In2CSV(args,output_file=tmp_file).main()
+    # for some reason the python utility not working so well ...
+    # this should also be a standard callback in human.py
+    import subprocess
+    subprocess.call(['in2csv',
+        #'--format',att_path.split('.')[-1].lower(),
+        att_path],stdout=tmp_file)
     tmp_file.close()
     return listify_file(tmp_file_name)
 
 
-def tabula_csv(att):
+def tabula_csv(att,listify=True):
     from parse_attachments import get_attachment_agency
     args = [
                 'tabula',
+                '--spreadsheet', # use spreadsheet when there are gridlines
+                '--pages=all',
                 att.file.path,
-                '--pages', 'all'
-                #'--spreadsheet',
                ] 
     csv_dir = '/home/ubuntu/foiamachine/repo/foiamachine/media/media/attachments/matthewlkiefer/pdfs/'
-    agency_name = get_attachment_agency(att).name
+    try:
+        agency_name = get_attachment_agency(att).name
+    except:
+        return
     # don't overwrite dupes
     file_name = csv_dir + agency_name + '.csv'
     outfile = open(file_name,'w')
     subprocess.call(args,stdout=outfile)
     outfile.close()
-    return listify_file(file_name)
+    if listify:
+        return listify_file(file_name)
+    return file_name

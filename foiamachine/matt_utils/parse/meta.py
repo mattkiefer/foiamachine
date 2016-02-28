@@ -23,7 +23,7 @@ def get_field_headers():
                      'salary':      {   
                                      'indices' : set(), 
                                      'keywords': ['salar', 'pay', 'wage','amount','annual','total'],
-                                     'required': True,
+                                     'required': False, # should be requited ... TODO: fill in salary with hourly before check_data() validation
                                      'reported': True,
                                      'title_case'   : False,
                                     },  

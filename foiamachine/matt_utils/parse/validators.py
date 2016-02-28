@@ -28,12 +28,24 @@ def validate_line(line):
 
 def validate_salary_format(line):
     salary = line['salary']
+
+    # a salary must have a number in it
+    number_present = False
+    for x in range(0,10):
+        if str(x) in str(salary):
+            number_present = True
+    if not number_present:
+        return None
+    # salary that converts to Decimal is legit
     try:
         line['salary'] = Decimal(salary) # if it doesn't fit, you must acquit
     except:
+        # if it doesn't convert to Decimal, it may have special chars or something
         for char in ('$','.','/','hour'):
             if char in line['salary']:
                 return line
+        return None
+    if line['salary'] == 0:
         return None
     return line
 
@@ -55,6 +67,6 @@ def validate_name(line):
     should have first, last name fields by
     validation time
     """
-    if not line['first_name'] or not line['last_name']:
+    if not line['first_name'].strip() or not line['last_name'].strip():
         return False
     return line

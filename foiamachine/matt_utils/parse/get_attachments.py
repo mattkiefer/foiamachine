@@ -3,6 +3,9 @@ from apps.requests.models import *
 from logging.logger import main_logger_path, main_logger_headers
 
 
+dupe_id_file_path = '/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/logging/logs/dupe_att_ids.txt'
+
+
 def get_attachments():
     dd_atts = get_deduped_attachments()
     return get_unprocessed_attachments(dd_atts)
@@ -13,17 +16,21 @@ def get_deduped_attachments():
     after checksum confirms they're
     deduplicated
     """
+    dupe_ids = []
     # id: hash dict may be useful for debugging
+    dupe_id_file= open(dupe_id_file_path,'w')
     all_attachments = []
     all_hashes = []
     for att in Attachment.objects.all():
         hash_str = hashlib.md5(open(att.file.path).read()).hexdigest()
         # skip dupes
         if hash_str in all_hashes:
+            dupe_id_file.write(str(att.id) + '\n')
             continue
         else:
             all_attachments.append(att)
             all_hashes.append(hash_str)
+    dupe_id_file.close()
     return all_attachments
 
 

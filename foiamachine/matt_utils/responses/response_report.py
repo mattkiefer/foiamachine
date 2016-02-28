@@ -10,7 +10,7 @@ from apps.mail.models import *
 from cleanup import *
 from taggit.models import Tag
 from bs4 import BeautifulSoup
-
+from matt_utils.parse.parse_attachments import get_attachment_request
 
 # TODO: get atts with *no* requests and fix those using email body/sender
 
@@ -348,7 +348,46 @@ def get_file_extension(attachment):
 def get_file_name(attachment):
     return attachment.file.name.encode()[61:] #hack based on att path
 
-def get_request_attachments():
+
+def get_request_attachments(request):
+    """
+    given a request,
+    return attachments as a
+    flat list of objects
+    """
+    atts = []
+    for mm in request.mailmessage_set.all():
+        for att in mm.attachments.all():
+            atts.append(att)
+        for reply in mm.replies.all():
+            for att in reply.attachments.all():
+                atts.append(att)
+    return atts
+
+
+def get_agency_attachments(agency_name):
+    """
+    look up agency
+    attachments by request and
+    return dict by filetype
+    """
+    atts = []
+    try:
+        agency = Agency.objects.get(name=agency_name)
+    except:
+        return agency_name, 'fail'
+    for request in agency.request_set.all():
+        for att in get_request_attachments(request):
+            atts.append(att)
+    exts = set(x.file.name.split('.')[-1].lower() for x in atts)
+    ext_files = dict()
+    for ext in exts:
+        ext_files[ext] = [x for x in atts if x.file.name.split('.')[-1].lower() == ext]
+    return ext_files
+           
+
+
+def get_all_request_attachments():
     """
     return tuple of
     (request id, attachments)
@@ -562,23 +601,26 @@ def attachment_report():
             # set up a directory for each agency
             agency_name = clean_name(agency.name)
             agency_dir = agency_att_dir + '/' + agency_name
-            os.mkdir(agency_dir)
+            if not os.path.exists(agency_dir):
+                os.mkdir(agency_dir)
             notes_file = open(agency_dir + '/' + agency_name + ' notes.txt','w')
 
             # de-duplication via checksum
             hashes = []
             attachments = []
             for att in check_agency_response(agency)[1]:
-                if type(att) == Attachment: # filters out unicode tags
-                    att_hash = hashlib.md5(open(att.file.path).read())
-                    if att_hash in hashes:
-                        print 'skipping dupe hash:', att.file.name, att_hash
-                        continue
-                    attachments.append(att)
-                    hashes.append(att_hash)
-                else: # write tags to notes file
-                    notes_file.write(att)
-            if agency_name.lower() == 'barrington': import pdb; pdb.set_trace()    
+                if type(att) == Attachment: 
+                    r = get_attachment_request(att)
+                    if r.status not in ('X'):
+                        # filters out unicode tags and deleted requests
+                        att_hash = hashlib.md5(open(att.file.path).read())
+                        if att_hash in hashes:
+                            print 'skipping dupe hash:', att.file.name, att_hash
+                            continue
+                        attachments.append(att)
+                        hashes.append(att_hash)
+                        notes_file.write('\n'.join([x.name for x in r.tags.all()]))
+            #if agency_name.lower() == 'barrington': import pdb; pdb.set_trace()    
             notes_file.close()
 
             for att in attachments:
@@ -602,7 +644,7 @@ def pdfs_suck():
 
 
 def pdfs_only():
-    return [ ra for ra in get_request_attachments() if is_pdf_only(ra)]
+    return [ ra for ra in get_all_request_attachments() if is_pdf_only(ra)]
 
 
 def is_pdf_only(ra):
@@ -660,6 +702,7 @@ def new_request(agency_name,req_id=1):
                             free_edit_body = req.free_edit_body, 
                             title = req.title
               )   
+    contact.agency_related_contacts.add(agency)
     request.contacts.add(contact)
     request.save()
 

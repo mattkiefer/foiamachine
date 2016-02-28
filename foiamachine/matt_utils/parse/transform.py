@@ -23,8 +23,17 @@ def do_all_transformations(data_row, header, attachment):
     data_row = salaries_to_decimals(data_row) # goes before other transformations
     data_row = put_hourly_in_salary(data_row)
     data_row = pop_unreported_headers(data_row, header)
+    data_row = strip_commas_out_of_names(data_row)
     return data_row
 
+
+def strip_commas_out_of_names(data_row):
+    """
+    simple enough
+    """
+    data_row['first_name'] = data_row['first_name'].replace(',',' ')
+    data_row['last_name'] = data_row['last_name'].replace(',',' ')
+    return data_row
 
 def disambiguate_first_and_last(data_row):
     """
@@ -72,7 +81,7 @@ def split_single_name_field(data_row, attachment):
         except:
             print 'failed to decode name to utf-8'
         # just testing out probablepeople
-        if test_pp:
+        if test_pp and '/' not in data_row['last_name'] and attachment.id not in first_name_first and attachment.id not in last_name_first:
             parsed_name = probablepeople.parse(data_row['last_name'])
             last_names = [x[0] for x in parsed_name if x[1] == 'Surname']
             if last_names:
@@ -99,7 +108,9 @@ def split_single_name_field(data_row, attachment):
             #test_file = open('test_pp.txt','a')
             #test_file.write(data_row['first_name'] + '    ' + data_row['last_name'] + '\n')
             #test_file.close()
-            return data_row
+            if data_row['last_name'].strip() and data_row['first_name'].strip():
+                return data_row
+
 
 
 
@@ -112,6 +123,9 @@ def split_single_name_field(data_row, attachment):
             data_row['last_name'] = ' '.join(comma_delimited[:-1])
         else:
             space_delimited = data_row['last_name'].split(' ')
+            #hack
+            if '/' in data_row['last_name']:
+                space_delimited = data_row['last_name'].split('/')
             if len(space_delimited) > 1:
                 data_row = set_order_single_name(data_row, attachment)
                 if not data_row['first_name']:

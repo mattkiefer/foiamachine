@@ -79,6 +79,7 @@ main_logger_headers = [
                        'header_found?',
                        'sample_last_name',
                        'sample_first_name',
+                       'sample_salary',
                        'processed?',
                       ]
 
@@ -103,6 +104,7 @@ def data_counts(attachment, csvdoc, agency_name, data, header):
     if len(data) > 1:
         sample_last_name = data[1]['last_name']
         sample_first_name = data[1]['first_name']
+        sample_salary = data[1]['salary']
         data_bool = True
     else:
         sample_last_name = ''
@@ -125,6 +127,7 @@ def data_counts(attachment, csvdoc, agency_name, data, header):
                'header_found?': header != None,
                'sample_last_name': sample_last_name,
                'sample_first_name': sample_first_name,
+               'sample_salary': sample_salary,
                'processed?': (float(len(data)) / float(len(csvdoc))) > min_process_pct,
               } 
         print row
@@ -192,12 +195,13 @@ def sort_outfile_by_troublemaker():
     outfile_reader = open(main_logger_path,'r')
     outfile_csv_reader = csv.DictReader(outfile_reader, main_logger_headers)
     outfile_list = [x for x in outfile_csv_reader]
-    outfile_slist = sorted(outfile_list, key = lambda x: Decimal(x['pct_processed']))
+    #outfile_slist = sorted(outfile_list, key = lambda x: Decimal(x['pct_processed']))
     outfile_reader.close()
 
     outfile_writer = open(main_logger_path,'w')
     outfile_csv_writer = csv.DictWriter(outfile_writer, main_logger_headers)
     outfile_csv_writer.writeheader()
-    for row in outfile_slist:
+    #for row in outfile_slist:
+    for row in outfile_list:
         outfile_csv_writer.writerow(row)
     outfile_writer.close()
