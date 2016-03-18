@@ -637,10 +637,10 @@ class Request(models.Model):
         else:
             self.status = 'I'
             #code = "LOOKUP:" + User.objects.make_random_password(length=64)
-            code = '2016' + 'payroll' + self.agency.name 
+            code = '2016' + '_payroll_' + self.agency.name.replace(' ','') 
 
-            while Request.objects.filter(thread_lookup=code):
-                code = User.objects.make_random_password(length=64)
+            #while Request.objects.filter(thread_lookup=code):
+            #    code = User.objects.make_random_password(length=64)
             self.thread_lookup = code
 
         super(Request, self).save(*args, **kw)

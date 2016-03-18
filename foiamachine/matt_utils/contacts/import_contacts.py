@@ -7,37 +7,46 @@ from apps.users.models import User
 from apps.requests.models import Request
 from django.conf import settings
 
-# REMEMBER TO TURN OFF DEBUG!
+"""
+******************************************
+*** REMEMBER TO TURN OFF DJANGO DEBUG! ***
+******************************************
+"""
 
 ###############
 # START CONFIG
 
-sender_username = 'matthewlkiefer'
-infilename = '/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/contacts/contacts.csv'
-req = Request.objects.get(id=1) # request template to clone 1:IL, 650:IN, 657:WI, 668:MO
+sender_username = 'payroll2016' # TODO: abstract this
+infilename = '/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/contacts/contacts_2016.csv'
+#req = Request.objects.get(id=1) # request template to clone varies for IL, IN, WI, MO
+req_text = open('/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/contacts/request.txt').read()
+req_free = open('/home/ubuntu/foiamachine/repo/foiamachine/matt_utils/contacts/request_free.txt').read() # hack
+req_title = 'Payroll FOIA'
 error_log = open('error.log','w')
-test = True
+test = False
+send = False
 #TODO: figure out tags
  
 # END CONFIG
 ##############
 
-if test:
-   infilename = 'test.csv'
-
 infile = open(infilename,'r')
-incsv = csv.reader(infile)
+incsv = csv.DictReader(infile)
 error_csv = csv.writer(error_log)
 icontacts = []
 for irow in incsv:
     orow = {
-            'government': irow[0],
-            'first_name': irow[1],
-            'last_name': irow[2],
-            'title': irow[3],
-            'email': irow[4],
-            'phone': irow[5],
+            'government': irow['government'],
+            'first_name': irow['first_name'],
+            'last_name': irow['last_name'],
+            'title': irow['title'],
+            'phone': irow['phone'],
            }
+    # for testing, override the email with this test recipient
+    if test:
+        orow['email'] = 'bga.payroll.2016+' + irow['government'].replace(' ','') + '@gmail.com'
+    else:
+        orow['email'] = irow['email']
 
     # easy way to skip all the empty rows
     if '@' not in orow['email']:
@@ -47,6 +56,7 @@ for irow in incsv:
         orow['first_name'] = 'FOIA Officer'
         orow['last_name'] = orow['government']
     icontacts.append(orow)
+    print orow
 
 # sender
 me = User.objects.filter(username=sender_username)[0]
@@ -61,26 +71,32 @@ for icontact in icontacts:
         language, ntn, govt = get_defaults()
         govt = get_or_create_us_govt(icontact['government'],'city') # TODO fix dumb hardcoded gov type using string inferences
         agency, created = Agency.objects.get_or_create(name=icontact['government'],government=govt)
+        # TODO: NEED TO USE EMAIL FOR GET OR CREATE
         contact, created = Contact.objects.get_or_create(first_name=icontact['first_name'], middle_name='', last_name=icontact['last_name'])
-        #contact.add_email(icontact['email'])
-        #agency.contacts.add(contact)
-        #agency.creator_id = me.id
-        #contact.save()
-        #agency.save()
+        contact.add_email(icontact['email'])
+        agency.contacts.add(contact)
+        agency.creator_id = me.id
+        contact.save()
+        agency.save()
     
         # create request for each contact
         request = Request.objects.create(
                             author_id= me.id, 
                             government_id = govt.id, 
                             agency_id = agency.id, 
-                            text = req.text, 
-                            free_edit_body = req.free_edit_body, 
-                            title = req.title
+                            text = req_text, 
+                            free_edit_body = req_free, 
+                            title = req_title + ' | ' + agency.name
                            )
         request.contacts.add(contact)
         request.save()
-        request.send()
+        # adding custom lookup
+        request.text = request.text + '\n\n' + request.thread_lookup
+        request.free_edit_body = request.free_edit_body + '\n\n' + request.thread_lookup
+        request.save()
+        if send:
+            request.send()
     except Exception, e:
-        error_csv.writerow(icontact.append(e))
+        error_csv.writerow([icontact['email'],e])
 
 error_log.close() 

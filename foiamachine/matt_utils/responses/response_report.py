@@ -1,4 +1,5 @@
-import os, shutil
+
+mport os, shutil
 import hashlib
 import csv
 import datetime
@@ -15,7 +16,7 @@ from matt_utils.parse.parse_attachments import get_attachment_request
 # TODO: get atts with *no* requests and fix those using email body/sender
 
 # att.file.name.split('.')[-1]
-acceptable_extensions = ('xlsx','xls','xlsb','csv','txt','pdf','doc','docx')
+acceptable_extensions = ('xlsx','xls','xlsb','csv','txt',)#'pdf','doc','docx')
 
 response_report_filename = 'full_response_report.csv'
 
@@ -705,6 +706,35 @@ def new_request(agency_name,req_id=1):
     contact.agency_related_contacts.add(agency)
     request.contacts.add(contact)
     request.save()
+
+
+def get_requests_with_acceptable_atts(tags=[]):
+    if tags:
+        rs = get_requests_by_taglist(tags=tags)
+    else:
+        rs = Request.objects.all()
+    acceptable_rs = [] 
+    for r in rs:
+        rmm = r.mailmessage_set.all()[0]
+        for rep in rmm.replies.all():
+            for att in rep.attachments.all():
+                if att.file.name.split('.')[-1] in acceptable_extensions:
+                    acceptable_rs.append(r)
+                    continue
+    return acceptable_rs
+
+
+def get_requests_by_taglist(tags=[]):
+    return Request.objects.filter(tags__name__in=tags)
+
+
+def get_no_response_reqs(tags=[]):
+    if tags:
+        return [x for x in get_requests_by_taglist(tags=tags) if not \
+                x.mailmessage_set.all()[0].replies.all()]
+    else:
+        return [x for x in Request.objects.all() if not
+                x.mailmessage_set.all()[0].replies.all()]
 
 # TODO: tool to join messages with requests (for manual forwards from gmail ... look up thread id somewhere ... start from all attachments) - 1 hr
 

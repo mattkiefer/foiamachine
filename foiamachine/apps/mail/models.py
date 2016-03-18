@@ -29,6 +29,7 @@ import re
 
 logger = logging.getLogger('default')
 thread_pattern = re.compile("LOOKUP:[a-zA-Z1234567890]*")
+#thread_pattern = re.compile("2016_payroll_[a-zA-Z1234567890]*")
 
 MSG_DIRECTIONS = (
     ('S', 'SENT'),
